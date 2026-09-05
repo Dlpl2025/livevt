@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Photo & Video Gallery</title>
   <style>
     :root {
@@ -18,6 +18,7 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -29,7 +30,7 @@
     }
 
     header {
-      padding: 1.25rem 2rem;
+      padding: 1rem 1.5rem;
       background: var(--card-bg);
       border-bottom: 1px solid #272a34;
       display: flex;
@@ -41,7 +42,7 @@
     }
 
     header h1 {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 600;
     }
 
@@ -49,10 +50,10 @@
       background: #2a2e39;
       color: var(--text);
       border: none;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem 0.9rem;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       display: none;
     }
 
@@ -61,7 +62,7 @@
     }
 
     main {
-      padding: 2rem;
+      padding: 1.25rem;
       max-width: 1600px;
       margin: 0 auto;
       width: 100%;
@@ -71,8 +72,8 @@
     /* Album Section */
     .album-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
     }
 
     .album-card {
@@ -90,7 +91,7 @@
     }
 
     .album-cover {
-      height: 180px;
+      height: 170px;
       background-size: cover;
       background-position: center;
       background-color: #272a34;
@@ -105,7 +106,7 @@
     }
 
     .album-info h3 {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       margin-bottom: 0.25rem;
       text-transform: capitalize;
     }
@@ -122,8 +123,8 @@
 
     .photo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.6rem;
     }
 
     .photo-item {
@@ -151,23 +152,23 @@
 
     .play-badge {
       position: absolute;
-      width: 48px;
-      height: 48px;
-      background: rgba(0, 0, 0, 0.65);
+      width: 44px;
+      height: 44px;
+      background: rgba(0, 0, 0, 0.7);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       pointer-events: none;
-      border: 2px solid rgba(255, 255, 255, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.85);
       transition: transform 0.2s ease, background 0.2s ease;
     }
 
     .photo-item:hover .play-badge,
     .album-card:hover .play-badge {
-      transform: scale(1.15);
+      transform: scale(1.1);
       background: var(--accent);
       border-color: #fff;
     }
@@ -179,76 +180,56 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.94);
-      backdrop-filter: blur(8px);
+      background: #000;
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 100;
+      z-index: 99999;
       user-select: none;
     }
 
     .lightbox-media-container {
-      width: 90vw;
-      height: 85vh;
-      max-width: 1200px;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .lightbox-content {
-      max-width: 90vw;
-      max-height: 85vh;
+      max-width: 96vw;
+      max-height: 90vh;
       object-fit: contain;
       border-radius: 6px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
 
+    /* Mobile Edge-to-Edge Fullscreen Video */
     .lightbox-video-frame {
       width: 100%;
       height: 100%;
-      max-width: 1100px;
-      max-height: 82vh;
-      aspect-ratio: 16 / 9;
       border: none;
-      border-radius: 8px;
-      box-shadow: 0 12px 35px rgba(0,0,0,0.9);
       background: #000;
+    }
+
+    /* Video Mode Specific Fullscreen Overlay */
+    .lightbox.video-mode .lightbox-media-container {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .lightbox.video-mode .lightbox-video-frame {
+      width: 100vw;
+      height: 100vh;
     }
 
     .lightbox-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.12);
-      border: none;
-      color: white;
-      font-size: 2rem;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-      z-index: 110;
-    }
-
-    .lightbox-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .lightbox-prev { left: 1.5rem; }
-    .lightbox-next { right: 1.5rem; }
-
-    .lightbox-close {
-      position: absolute;
-      top: 1.5rem;
-      right: 1.5rem;
-      background: rgba(255, 255, 255, 0.12);
-      border: none;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: white;
       font-size: 1.8rem;
       width: 44px;
@@ -259,21 +240,78 @@
       align-items: center;
       justify-content: center;
       transition: background 0.2s;
-      z-index: 110;
+      z-index: 100000;
+    }
+
+    .lightbox-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .lightbox-prev { left: 1rem; }
+    .lightbox-next { right: 1rem; }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      font-size: 1.8rem;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 100001;
     }
 
     .lightbox-close:hover {
-      background: rgba(255, 60, 60, 0.7);
+      background: rgba(239, 68, 68, 0.85);
     }
 
     .lightbox-counter {
       position: absolute;
-      bottom: 1.5rem;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 0.35rem 0.85rem;
+      bottom: 1rem;
+      color: #fff;
+      font-size: 0.85rem;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 0.3rem 0.75rem;
       border-radius: 12px;
+      z-index: 100000;
+    }
+
+    /* Rotate Button for Mobile */
+    .lightbox-rotate-btn {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 1.2rem;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100001;
+    }
+
+    @media (max-width: 768px) {
+      .lightbox-prev, .lightbox-next {
+        width: 38px;
+        height: 38px;
+        font-size: 1.4rem;
+      }
+      .lightbox-rotate-btn {
+        display: flex;
+      }
     }
   </style>
 </head>
@@ -297,9 +335,10 @@
   <!-- Lightbox Popup -->
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">×</button>
+    <button class="lightbox-rotate-btn" id="btn-rotate" onclick="toggleScreenOrientation()" title="Rotate Landscape/Portrait">⟲</button>
     <button class="lightbox-btn lightbox-prev" id="btn-prev" onclick="prevPhoto()">❮</button>
     
-    <div class="lightbox-media-container">
+    <div class="lightbox-media-container" id="media-container">
       <img src="" alt="Full view" class="lightbox-content" id="lightbox-img" style="display: none;">
       <iframe src="" class="lightbox-video-frame" id="lightbox-video" allow="autoplay; fullscreen" allowfullscreen style="display: none;"></iframe>
     </div>
@@ -309,12 +348,10 @@
   </div>
 
   <script>
-    // Drive image direct link
     function getDriveDirectUrl(fileId) {
       return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
 
-    // Drive video player preview link (with native player & fullscreen support)
     function getDriveVideoEmbedUrl(fileId) {
       return `https://drive.google.com/file/d/${fileId}/preview`;
     }
@@ -388,62 +425,62 @@
         photos: [
           { id: "1wZMRYDR7ag7KB9APoGq9nPj4T1nWrhIG" },
           { id: "10gCCgawvV2tvufQhEwLt82KKpNeU7Y6h" },
-{ id: "10ugrp5jeWtf-IZjuCNsohu3g7QdbK05U" },
-{ id: "10ymYAs89gGy0mh7lJOwrBVKMlHDW4qUn" },
-{ id: "129Xliai_nF42MpsxWOTobKfmNYAOi3hy" },
-{ id: "12XNwkQMUhrqNqmG7TNvwMmXz3_XeV88P" },
-{ id: "13CLM9v0D5Q7y0RjyBxk0zrdjyL5dfwuW" },
-{ id: "13Vq9B_zbb7PDHM8tjUA9Q9I14ui3ZzxV" },
-{ id: "14HQm1-MGekC-5jnLTiv_w0U-BXoLYd37" },
-{ id: "1840iNBuIvgGH4glwm9fDkXZyU32YrPer" },
-{ id: "1ApzW1tCSZYVJBAzKhDMVXRjtbgGoptYF" },
-{ id: "1BSinqa8DemyC10WPY_ibm9O72IpJpmGL" },
-{ id: "1CT94aXJYXH43bMNTImFyErogbkUni0X_" },
-{ id: "1D_f6Bux4KAfmzkp5xQiScaGhXBUPzKJm" },
-{ id: "1EBrSB3sel1hOd7BFgV6S_ZFatxNFZ5Zi" },
-{ id: "1GDz6EbG6-e2pLrK4KjUdMx8nzqhmRUIA" },
-{ id: "1JQf95spWxAokOj7peb1evEDYeGJJ5yQU" },
-{ id: "1JkYQz2CJ4b30RnSui6QxifUVzkIzsD5C" },
-{ id: "1LalcWWqxOfZd6DdwkUQHu8PQPKKs-CXn" },
-{ id: "1M3vTrMe6faQnp9yj_wSxmCuKkuxymE5X" },
-{ id: "1ORpv0GAbBP7g72bRuAKS5tfAdQ0k-NPP" },
-{ id: "1P02uEMBWh1Cy8_UxRb_gTrW6aMoDJBYD" },
-{ id: "1QBlfqlUYyOeOfbRgs358AlRrgdIn3Jv_" },
-{ id: "1R-xFj-MYo47OVWiItB4zfXUMQ1UmBLxS" },
-{ id: "1Sqcd-pCvd3AJP5c7DhjN1LanRCH1U_CS" },
-{ id: "1T0InmFQ4NzVEXLuRhW02hTsaWprfEK5W" },
-{ id: "1UzJbUBPV8o5suw3DKkaHC_d2ecy7dGTU" },
-{ id: "1WwCctcQ3Giuay_Fshg4RBdzb9WU-iMv9" },
-{ id: "1X6YJltxgb34VG5PAfurvyhw0-fiEaSrI" },
-{ id: "1Y-WmUHd4pmBFzEFQADolNAyERYaY35zj" },
-{ id: "1YnuVwbDz_NqQOFBIVt183PcFqP7YkYfQ" },
-{ id: "1bTSby2UASwPegoIli5QE-NgMFlAv-u-S" },
-{ id: "1bhTRhVBTL4RL1UpHQQKd_4Gc39n6GXX7" },
-{ id: "1ci_LP0xnN-nR6ZIdTb0qh17P_T9LbJSx" },
-{ id: "1ejOc-OdKjvLsSvOMrKTDWjubFQXFLHok" },
-{ id: "1etiVXNVVnbgU0GRIJdwfIJJsCA0lgU7A" },
-{ id: "1fprfYADgi9gP5DQRIRNvu3x4mVLuu635" },
-{ id: "1gssMwCk3g4ixyRiyoKMz9C2AWOFuzFn1" },
-{ id: "1i2TfIqSOcGPZhAIYbSCR61Jh7pp48D-r" },
-{ id: "1iPf3V-MzY3bgwX3VlY5ujEDZU_3Rl-QD" },
-{ id: "1m7Q_YWWGkpjXWqaaU_XSoW_BRp3Gzizj" },
-{ id: "1mSSxgexaKK_9mNqIC5BWbOTf_uaNzocI" },
-{ id: "1n8WKWhZpT90iB3ptgtGzrNYCm_znVi4c" },
-{ id: "1nOk_qczBFB6ZohUIE943xKcg0z9cJHr_" },
-{ id: "1q0Ygg2rMR9GTZwFVrzDqkHx69_NB0RMj" },
-{ id: "1sNhMUqyK7wptelf3vYjHEuAkDXbYYIiK" },
-{ id: "1tHbcEDCYj2QFSYrsGR3kVIOsn64SWeOZ" },
-{ id: "1uHedAeAOcxeS2_VYZflu3RFw99N3uaov" },
-{ id: "1wZMRYDR7ag7KB9APoGq9nPj4T1nWrhIG" },
-{ id: "1zVCawpBJBCPV8XkrjBMmNEy2RBgEhrkc" },
-{ id: "1zsdaukAeTYNQD2EmvOsOzVllYOxX1P-m" }
-
+          { id: "10ugrp5jeWtf-IZjuCNsohu3g7QdbK05U" },
+          { id: "10ymYAs89gGy0mh7lJOwrBVKMlHDW4qUn" },
+          { id: "129Xliai_nF42MpsxWOTobKfmNYAOi3hy" },
+          { id: "12XNwkQMUhrqNqmG7TNvwMmXz3_XeV88P" },
+          { id: "13CLM9v0D5Q7y0RjyBxk0zrdjyL5dfwuW" },
+          { id: "13Vq9B_zbb7PDHM8tjUA9Q9I14ui3ZzxV" },
+          { id: "14HQm1-MGekC-5jnLTiv_w0U-BXoLYd37" },
+          { id: "1840iNBuIvgGH4glwm9fDkXZyU32YrPer" },
+          { id: "1ApzW1tCSZYVJBAzKhDMVXRjtbgGoptYF" },
+          { id: "1BSinqa8DemyC10WPY_ibm9O72IpJpmGL" },
+          { id: "1CT94aXJYXH43bMNTImFyErogbkUni0X_" },
+          { id: "1D_f6Bux4KAfmzkp5xQiScaGhXBUPzKJm" },
+          { id: "1EBrSB3sel1hOd7BFgV6S_ZFatxNFZ5Zi" },
+          { id: "1GDz6EbG6-e2pLrK4KjUdMx8nzqhmRUIA" },
+          { id: "1JQf95spWxAokOj7peb1evEDYeGJJ5yQU" },
+          { id: "1JkYQz2CJ4b30RnSui6QxifUVzkIzsD5C" },
+          { id: "1LalcWWqxOfZd6DdwkUQHu8PQPKKs-CXn" },
+          { id: "1M3vTrMe6faQnp9yj_wSxmCuKkuxymE5X" },
+          { id: "1ORpv0GAbBP7g72bRuAKS5tfAdQ0k-NPP" },
+          { id: "1P02uEMBWh1Cy8_UxRb_gTrW6aMoDJBYD" },
+          { id: "1QBlfqlUYyOeOfbRgs358AlRrgdIn3Jv_" },
+          { id: "1R-xFj-MYo47OVWiItB4zfXUMQ1UmBLxS" },
+          { id: "1Sqcd-pCvd3AJP5c7DhjN1LanRCH1U_CS" },
+          { id: "1T0InmFQ4NzVEXLuRhW02hTsaWprfEK5W" },
+          { id: "1UzJbUBPV8o5suw3DKkaHC_d2ecy7dGTU" },
+          { id: "1WwCctcQ3Giuay_Fshg4RBdzb9WU-iMv9" },
+          { id: "1X6YJltxgb34VG5PAfurvyhw0-fiEaSrI" },
+          { id: "1Y-WmUHd4pmBFzEFQADolNAyERYaY35zj" },
+          { id: "1YnuVwbDz_NqQOFBIVt183PcFqP7YkYfQ" },
+          { id: "1bTSby2UASwPegoIli5QE-NgMFlAv-u-S" },
+          { id: "1bhTRhVBTL4RL1UpHQQKd_4Gc39n6GXX7" },
+          { id: "1ci_LP0xnN-nR6ZIdTb0qh17P_T9LbJSx" },
+          { id: "1ejOc-OdKjvLsSvOMrKTDWjubFQXFLHok" },
+          { id: "1etiVXNVVnbgU0GRIJdwfIJJsCA0lgU7A" },
+          { id: "1fprfYADgi9gP5DQRIRNvu3x4mVLuu635" },
+          { id: "1gssMwCk3g4ixyRiyoKMz9C2AWOFuzFn1" },
+          { id: "1i2TfIqSOcGPZhAIYbSCR61Jh7pp48D-r" },
+          { id: "1iPf3V-MzY3bgwX3VlY5ujEDZU_3Rl-QD" },
+          { id: "1m7Q_YWWGkpjXWqaaU_XSoW_BRp3Gzizj" },
+          { id: "1mSSxgexaKK_9mNqIC5BWbOTf_uaNzocI" },
+          { id: "1n8WKWhZpT90iB3ptgtGzrNYCm_znVi4c" },
+          { id: "1nOk_qczBFB6ZohUIE943xKcg0z9cJHr_" },
+          { id: "1q0Ygg2rMR9GTZwFVrzDqkHx69_NB0RMj" },
+          { id: "1sNhMUqyK7wptelf3vYjHEuAkDXbYYIiK" },
+          { id: "1tHbcEDCYj2QFSYrsGR3kVIOsn64SWeOZ" },
+          { id: "1uHedAeAOcxeS2_VYZflu3RFw99N3uaov" },
+          { id: "1wZMRYDR7ag7KB9APoGq9nPj4T1nWrhIG" },
+          { id: "1zVCawpBJBCPV8XkrjBMmNEy2RBgEhrkc" },
+          { id: "1zsdaukAeTYNQD2EmvOsOzVllYOxX1P-m" }
         ]
       }
     ];
 
     let currentAlbum = null;
     let activePhotoIndex = 0;
+    let isLandscape = false;
 
     // Render Album Cards
     function renderAlbums() {
@@ -471,14 +508,14 @@
           ${coverHtml}
           <div class="album-info">
             <h3>${album.title}</h3>
-            <p>${album.photos.length} ${isVideoAlbum ? 'Video' : 'Photos'}</p>
+            <p>${album.photos.length} ${isVideoAlbum ? 'Videos' : 'Photos'}</p>
           </div>
         `;
         container.appendChild(card);
       });
     }
 
-    // Open an Album & Display Items
+    // Open Album
     function openAlbum(album) {
       currentAlbum = album;
       document.getElementById('album-container').style.display = 'none';
@@ -509,7 +546,7 @@
       });
     }
 
-    // Return to Albums View
+    // Back to Albums View
     function showAlbums() {
       closeLightbox();
       document.getElementById('album-container').style.display = 'grid';
@@ -526,19 +563,103 @@
     const lightboxCounter = document.getElementById('lightbox-counter');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
+    const btnRotate = document.getElementById('btn-rotate');
 
-    function openLightbox(index) {
+    async function openLightbox(index) {
       activePhotoIndex = index;
-      updateLightbox();
+      const isVideo = currentAlbum.type === 'video' || currentAlbum.id === 'video';
+      
       lightbox.style.display = 'flex';
+
+      if (isVideo) {
+        lightbox.classList.add('video-mode');
+        btnRotate.style.display = 'flex';
+        // Auto trigger fullscreen & landscape orientation on Android
+        autoEnterFullscreenAndRotate();
+      } else {
+        lightbox.classList.remove('video-mode');
+        btnRotate.style.display = 'none';
+      }
+
+      updateLightbox();
+    }
+
+    async function autoEnterFullscreenAndRotate() {
+      try {
+        if (!document.fullscreenElement && lightbox.requestFullscreen) {
+          await lightbox.requestFullscreen();
+        } else if (!document.fullscreenElement && lightbox.webkitRequestFullscreen) {
+          await lightbox.webkitRequestFullscreen();
+        }
+      } catch (err) {
+        console.log("Fullscreen request bypassed:", err);
+      }
+
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape");
+          isLandscape = true;
+        }
+      } catch (err) {
+        console.log("Orientation lock not supported without PWA/user permission:", err);
+      }
+    }
+
+    async function toggleScreenOrientation() {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          if (isLandscape) {
+            await screen.orientation.lock("portrait");
+            isLandscape = false;
+          } else {
+            await screen.orientation.lock("landscape");
+            isLandscape = true;
+          }
+        }
+      } catch (e) {
+        // Fallback CSS rotation if native screen orientation lock fails
+        const container = document.getElementById('media-container');
+        if (!isLandscape) {
+          container.style.transform = 'rotate(90deg)';
+          container.style.width = '100vh';
+          container.style.height = '100vw';
+          isLandscape = true;
+        } else {
+          container.style.transform = 'none';
+          container.style.width = '100%';
+          container.style.height = '100%';
+          isLandscape = false;
+        }
+      }
     }
 
     function closeLightbox() {
       lightbox.style.display = 'none';
-      // Stop video playback when lightbox is closed
       lightboxVideo.src = '';
       lightboxVideo.style.display = 'none';
       lightboxImg.style.display = 'none';
+
+      // Reset transform
+      const container = document.getElementById('media-container');
+      container.style.transform = 'none';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      isLandscape = false;
+
+      // Unlock orientation & exit fullscreen
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch(e) {}
+
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      } catch(e) {}
     }
 
     function updateLightbox() {
@@ -547,7 +668,6 @@
       const item = currentAlbum.photos[activePhotoIndex];
       const isVideo = currentAlbum.type === 'video' || currentAlbum.id === 'video';
 
-      // Show/hide navigation arrows if single item
       if (currentAlbum.photos.length <= 1) {
         btnPrev.style.display = 'none';
         btnNext.style.display = 'none';
@@ -582,7 +702,6 @@
       updateLightbox();
     }
 
-    // Keyboard Navigation
     window.addEventListener('keydown', (e) => {
       if (lightbox.style.display === 'flex') {
         if (e.key === 'ArrowRight') nextPhoto();
@@ -591,7 +710,7 @@
       }
     });
 
-    // Touch Swipe Support
+    // Touch Swipe Navigation
     let touchStartX = 0;
     let touchEndX = 0;
 
