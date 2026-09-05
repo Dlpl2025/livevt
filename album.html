@@ -1,0 +1,465 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Album Gallery</title>
+  <style>
+    :root {
+      --bg-color: #0f1115;
+      --card-bg: #1a1d24;
+      --accent: #3b82f6;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.25rem 2rem;
+      background: var(--card-bg);
+      border-bottom: 1px solid #272a34;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .btn-back {
+      background: #2a2e39;
+      color: var(--text);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .btn-back:hover {
+      background: #373b49;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Album Section */
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .album-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid #272a34;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .album-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .album-cover {
+      height: 180px;
+      background-size: cover;
+      background-position: center;
+      background-color: #272a34;
+    }
+
+    .album-info {
+      padding: 1rem;
+    }
+
+    .album-info h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .album-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Photo Grid Section */
+    .photo-grid-wrapper {
+      display: none;
+    }
+
+    .photo-grid {
+      display: grid;
+      /* Densely packed grid capable of 100-150 items per view */
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .photo-item {
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 6px;
+      background-color: #1f232b;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+    }
+
+    .photo-item:hover img {
+      transform: scale(1.05);
+    }
+
+    /* Lightbox Modal */
+    .lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      user-select: none;
+    }
+
+    .lightbox-content {
+      max-width: 90vw;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      transition: transform 0.2s ease;
+    }
+
+    .lightbox-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 2rem;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .lightbox-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .lightbox-prev { left: 1.5rem; }
+    .lightbox-next { right: 1.5rem; }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+
+    .lightbox-counter {
+      position: absolute;
+      bottom: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="view-title">Photo Albums</h1>
+    <button class="btn-back" id="btn-back" onclick="showAlbums()">← Back to Albums</button>
+  </header>
+
+  <main>
+    <!-- Albums View -->
+    <div class="album-grid" id="album-container"></div>
+
+    <!-- Photo Grid View -->
+    <div class="photo-grid-wrapper" id="photo-container">
+      <div class="photo-grid" id="photo-grid"></div>
+    </div>
+  </main>
+
+  <!-- Lightbox Popup -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <button class="lightbox-btn lightbox-prev" onclick="prevPhoto()">&#10094;</button>
+    <img src="" alt="Full view" class="lightbox-content" id="lightbox-img">
+    <button class="lightbox-btn lightbox-next" onclick="nextPhoto()">&#10095;</button>
+    <div class="lightbox-counter" id="lightbox-counter">1 / 5</div>
+  </div>
+
+  <script>
+    // Converts standard Drive view links to direct image source endpoints
+    function getDriveDirectUrl(fileId) {
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+
+    // Dataset containing your links
+    const albums = [
+      {
+        id: "sample-album",
+        title: "Main Drive Album",
+        photos: [
+          { id: "1qBcW5sV_fuRdu9JOECc5vJxcakXg2hyL" },
+          { id: "1DRjVSKmsYKz7nB9QuJJhSstwhOpKSrOL" },
+          { id: "1iMlG_SMl0xWP9EdJLoSg5kOGIUNMXo0Y" },
+          { id: "1O-AfNKgKSxAiQ3lDFe0bupW4ebnJBqWK" },
+          { id: "1DRjVSKmsYKz7nB9QuJJhSstwhOpKSrOL" },
+{ id: "1qBcW5sV_fuRdu9JOECc5vJxcakXg2hyL" },
+{ id: "1DhrDnQjkh4hc3-KVIJU-zYKfWdk__kL6" },
+{ id: "1MMNCA97Q416_Qkm-7pFtcodwg3mber6m" },
+{ id: "1d3uiCafZDEtHuBYQUxzrxu0uiGf2wSIV" },
+{ id: "1wIYENCpERzhvKkdywnwZraApGS-RkXoq" },
+{ id: "1aO8opHYPC_tjh3Hp_-VFDRxAi5SX9unZ" },
+{ id: "1yT5l7Pm7fD2Y2Eaw-hQQHbcWSkukh31t" },
+{ id: "1bA1kcDw08GYTYNyaHYICNXOIRtvcXaTV" },
+{ id: "1CcrI3Fi5lOzXpgh8Ol075SylQbQDHD_y" },
+{ id: "1e0hId3l01GjaRbEb08BdaLAQXLOcX4mF" },
+{ id: "1lrYNHx01kVNpdWJkc9Shl-yQ05yHbqWC" },
+{ id: "1iMlG_SMl0xWP9EdJLoSg5kOGIUNMXo0Y" },
+{ id: "1a8oLTY_dVsCFs7LoOu_ekpMtyaTDNusR" },
+{ id: "12FGuKkhBGdTB197CCrMcxahTPG5Rn8o-" },
+{ id: "1ZkKHVukT-j5uR6sWHDElCVHRfZu068Zi" },
+{ id: "1vmS5cYR1iGmxUj9qD0gcEjxhZnKB7RMB" },
+{ id: "1B_o8DMQ2PY9gjURdMjL-b49axHuozqmf" },
+{ id: "1hHHo2noeVbfigUMtV0IuHziTMSUrJgaR" },
+{ id: "15tNkwSpOMtZ6xrOheNgUssU8KI8EtJ72" },
+{ id: "10y9-Lg_eTmhBMzTebN4JYlZuNxihEsRw" },
+{ id: "1UYdhLimP6CAJR6-AJ6uSObjmYksTJqZf" },
+{ id: "1vGETXZPGfAmW0r32B0-3t8FKCljsBm4Z" },
+{ id: "1NItykjkbw6XzT-rbMJ966TVBr06ZJ90y" },
+{ id: "1HsUOfjYSkgOS49YrPdTSqBeCYdQMW-Pl" },
+{ id: "1wz67_eefqanetErwWrnTxHhAVHcwKp0T" },
+{ id: "1Am8AfghwOOY-lufaWHt20IFiF-WApd-9" },
+{ id: "1W7Kk4faWHEwKigI4EOE56IPV6tDXcthg" },
+{ id: "1qxdU1EmibbEYiVyQrqGohOP-rSNh2YsS" },
+{ id: "1LAuVgIzWdtMbUgf6efF01oPThwmP5u4L" },
+{ id: "1PreTFFPKt3_oszH7ZHojNnNAZ_wGKjos" },
+{ id: "1sugWHaHA3IM-BxsR2Vv5bd5JqfpD5ADr" },
+{ id: "1d9AI4TxnrR0YUg1_P1PtNx-fBwNuNarp" },
+{ id: "1Tu74AagzirLMmR4wU7EbeXVUbHXYldcw" },
+{ id: "1NB0w-CIOe9-jhW1MyEW4M8T65RZlVQYt" },
+{ id: "1YBatZ_L841U6uST8Qft-5QHoGyVnPrbN" },
+{ id: "1eKkCNiB2xfj2AQgHavLZ3trWfKxjfy7L" },
+{ id: "144ESi0WPDU0vmGqVtMbm_TXvpsc3EWyA" },
+{ id: "1jxJuVq6NIBx1EuxNO6fJmNEox-3YX1lh" },
+{ id: "1jM0in-vd367oAOjFhGRT8euzlxo_mNGq" },
+{ id: "1beC51tayRmUBVPP0qLDxUW7eNQ_Vckb6" },
+{ id: "1r3bqNcpbZNxhZXrJuIRb1QaJHtUBj5GE" },
+{ id: "1LHoOZouhQgfIw6v7opP30HKQfYDK1bGy" },
+{ id: "1FJyf6b2JUr6q7C9NLPTUOehL7vO-evsV" },
+{ id: "1Yd6jffsxH_4Gcproto8cFw8CC0AhJUj3" },
+{ id: "15iW6qvu0Rz6DmDuE6zaCuq5lJQiDLJo9" },
+{ id: "12kO-qZfaroJH_CJwtPy-bUwsoFL47ef1" },
+{ id: "1kHbwp1onM3WSq3xJ9W1qA8ktp7WUKEeM" },
+{ id: "1G-lWyEZGnt93akU-Lv5heC7eLBTy9aRU" },
+{ id: "1yWJvnTtw2I9E2tvq9uXbBNRCqDsEsX4F" },
+{ id: "1ZCc5tGg19HkMPamEh0MM2F_dAXoeFIsh" },
+{ id: "1hc-5pd4itf_UjmL35Npw4Cu_a63Kv-MX" },
+{ id: "1lnUQ5Vb7g0RIoLRO---jhwWYAZ9jwhtx" },
+{ id: "1n9HjOFl9ipvdDLJXdfpKDO3WevoY3pqt" },
+{ id: "1C6tKCV0fQqsOo9xgJkaVBUJJqz68w9ks" },
+{ id: "1SfVFB6LF5V42NhfYiPL2yZ_cXQv5neE9" },
+{ id: "1Xa8dKm3mVS3E-2w5ecRkmDgVmsRO9a7X" },
+{ id: "1pxSUlRxoynZRWn3WYSZiV2errHALwKUi" },
+{ id: "1F1ZJxCYSwzQjCV1ZSvPOtTipWz2MQ3RD" },
+{ id: "1PloIhkmPi4jj5xp393ppNXwxTdL0SsHH" },
+{ id: "1ja54zuz3VAOXboEYZRdeZWNm4_ZrHdC7" },
+{ id: "1SrNXfWWMVel_py1L2BNJap79E7Yir2G-" },
+{ id: "1Dc4ws_FyTSr5vq80i9pGk6fKNbtmya2_" },
+{ id: "17mnhxXxa8wl0ANfNqOva5woKG9AXVEJh" },
+{ id: "16Xgrj8GSKzs2c0PeOy2SYw3bPdXMSXft" },
+{ id: "1i7nMRBDS0xSonHpZubQ0OpO7wsXoQEO3" },
+{ id: "1u53py5mYM0fu_mBZKTjBDbT3f46cBJYg" },
+{ id: "1Lg-OLZsL8XmsmNtC7v-8k5rI0KqZ7mny" },
+{ id: "1cmrtEkfRMjOGkB4bWJrBmjSin-oxMD26" },
+{ id: "1olgmhbveqG04ZtJ-2wO6kOGVCWRBeUYJ" },
+{ id: "13pz03v1PX8gUiEe761KgJdSSV5WmdKvs" },
+{ id: "1vEikkJ0lJost_cC_l0keMN3ZBRSQ6Ftl" },
+{ id: "1DDoU4xyLu7EvPdSxlf7Va6Nrj-qBVwei" },
+{ id: "1ITbnA40rok9AZDiVgLVGuMo4MzyA6cXl" },
+{ id: "1sQivTqpLjV1w25ng-GbuT1v3gk9bcJsN" },
+{ id: "1TyyYmECxI5YTQFABIDttxpL0sRttC3fZ" },
+{ id: "12OO05Nw58Efp1vE0VJSv0pGGtDtuJAI9" },
+{ id: "10Uvirrisao6UZsnnDuwNUkg-lCPi8EYQ" },
+{ id: "1SlWXgQIfMAxVgBNC1LpKuaQD5Z9yTAyA" },
+          { id: "14f41raDCbmhf3p3SwIDyGPXrx3p7b_VK" }
+        ]
+      }
+    ];
+
+    let currentAlbum = null;
+    let activePhotoIndex = 0;
+
+    // Render Album Cards
+    function renderAlbums() {
+      const container = document.getElementById('album-container');
+      container.innerHTML = '';
+
+      albums.forEach(album => {
+        const coverUrl = getDriveDirectUrl(album.photos[0].id);
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.onclick = () => openAlbum(album);
+        card.innerHTML = `
+          <div class="album-cover" style="background-image: url('${coverUrl}')"></div>
+          <div class="album-info">
+            <h3>${album.title}</h3>
+            <p>${album.photos.length} Photos</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Open an Album & Display Photos
+    function openAlbum(album) {
+      currentAlbum = album;
+      document.getElementById('album-container').style.display = 'none';
+      document.getElementById('photo-container').style.display = 'block';
+      document.getElementById('btn-back').style.display = 'block';
+      document.getElementById('view-title').innerText = album.title;
+
+      const grid = document.getElementById('photo-grid');
+      grid.innerHTML = '';
+
+      album.photos.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+        item.onclick = () => openLightbox(index);
+        item.innerHTML = `<img src="${getDriveDirectUrl(photo.id)}" loading="lazy" alt="Photo ${index + 1}">`;
+        grid.appendChild(item);
+      });
+    }
+
+    // Return to Albums View
+    function showAlbums() {
+      document.getElementById('album-container').style.display = 'grid';
+      document.getElementById('photo-container').style.display = 'none';
+      document.getElementById('btn-back').style.display = 'none';
+      document.getElementById('view-title').innerText = 'Photo Albums';
+      currentAlbum = null;
+    }
+
+    // Lightbox Controls
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCounter = document.getElementById('lightbox-counter');
+
+    function openLightbox(index) {
+      activePhotoIndex = index;
+      updateLightbox();
+      lightbox.style.display = 'flex';
+    }
+
+    function closeLightbox() {
+      lightbox.style.display = 'none';
+    }
+
+    function updateLightbox() {
+      const photo = currentAlbum.photos[activePhotoIndex];
+      lightboxImg.src = getDriveDirectUrl(photo.id);
+      lightboxCounter.innerText = `${activePhotoIndex + 1} / ${currentAlbum.photos.length}`;
+    }
+
+    function nextPhoto() {
+      if (!currentAlbum) return;
+      activePhotoIndex = (activePhotoIndex + 1) % currentAlbum.photos.length;
+      updateLightbox();
+    }
+
+    function prevPhoto() {
+      if (!currentAlbum) return;
+      activePhotoIndex = (activePhotoIndex - 1 + currentAlbum.photos.length) % currentAlbum.photos.length;
+      updateLightbox();
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (lightbox.style.display === 'flex') {
+        if (e.key === 'ArrowRight') nextPhoto();
+        if (e.key === 'ArrowLeft') prevPhoto();
+        if (e.key === 'Escape') closeLightbox();
+      }
+    });
+
+    // Touch Swipe Support (Left / Right swipe)
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    lightbox.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    lightbox.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, false);
+
+    function handleSwipe() {
+      const threshold = 50; // Minimum swipe distance in px
+      if (touchEndX < touchStartX - threshold) {
+        nextPhoto(); // Swiped left -> show next
+      }
+      if (touchEndX > touchStartX + threshold) {
+        prevPhoto(); // Swiped right -> show previous
+      }
+    }
+
+    // Initialize
+    renderAlbums();
+  </script>
+</body>
+</html>
