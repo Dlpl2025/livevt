@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Photo Album Gallery</title>
+  <title>Photo & Video Gallery</title>
   <style>
     :root {
       --bg-color: #0f1115;
@@ -94,6 +94,10 @@
       background-size: cover;
       background-position: center;
       background-color: #272a34;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .album-info {
@@ -103,6 +107,7 @@
     .album-info h3 {
       font-size: 1.1rem;
       margin-bottom: 0.25rem;
+      text-transform: capitalize;
     }
 
     .album-info p {
@@ -110,25 +115,27 @@
       color: var(--text-muted);
     }
 
-    /* Photo Grid Section */
+    /* Photo/Video Grid Section */
     .photo-grid-wrapper {
       display: none;
     }
 
     .photo-grid {
       display: grid;
-      /* Densely packed grid capable of 100-150 items per view */
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 0.75rem;
     }
 
     .photo-item {
       aspect-ratio: 1 / 1;
       overflow: hidden;
-      border-radius: 6px;
+      border-radius: 8px;
       background-color: #1f232b;
       cursor: pointer;
       position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .photo-item img {
@@ -142,6 +149,29 @@
       transform: scale(1.05);
     }
 
+    .play-badge {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.65);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.4rem;
+      pointer-events: none;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .photo-item:hover .play-badge,
+    .album-card:hover .play-badge {
+      transform: scale(1.15);
+      background: var(--accent);
+      border-color: #fff;
+    }
+
     /* Lightbox Modal */
     .lightbox {
       position: fixed;
@@ -149,8 +179,8 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.92);
-      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.94);
+      backdrop-filter: blur(8px);
       display: none;
       justify-content: center;
       align-items: center;
@@ -158,20 +188,40 @@
       user-select: none;
     }
 
+    .lightbox-media-container {
+      width: 90vw;
+      height: 85vh;
+      max-width: 1200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .lightbox-content {
       max-width: 90vw;
       max-height: 85vh;
       object-fit: contain;
-      border-radius: 4px;
+      border-radius: 6px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-      transition: transform 0.2s ease;
+    }
+
+    .lightbox-video-frame {
+      width: 100%;
+      height: 100%;
+      max-width: 1100px;
+      max-height: 82vh;
+      aspect-ratio: 16 / 9;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.9);
+      background: #000;
     }
 
     .lightbox-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       border: none;
       color: white;
       font-size: 2rem;
@@ -183,10 +233,11 @@
       align-items: center;
       justify-content: center;
       transition: background 0.2s;
+      z-index: 110;
     }
 
     .lightbox-btn:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.3);
     }
 
     .lightbox-prev { left: 1.5rem; }
@@ -196,11 +247,23 @@
       position: absolute;
       top: 1.5rem;
       right: 1.5rem;
-      background: none;
+      background: rgba(255, 255, 255, 0.12);
       border: none;
       color: white;
-      font-size: 2rem;
+      font-size: 1.8rem;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 110;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255, 60, 60, 0.7);
     }
 
     .lightbox-counter {
@@ -208,8 +271,8 @@
       bottom: 1.5rem;
       color: var(--text-muted);
       font-size: 0.9rem;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 0.25rem 0.75rem;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 0.35rem 0.85rem;
       border-radius: 12px;
     }
   </style>
@@ -225,7 +288,7 @@
     <!-- Albums View -->
     <div class="album-grid" id="album-container"></div>
 
-    <!-- Photo Grid View -->
+    <!-- Photo/Video Grid View -->
     <div class="photo-grid-wrapper" id="photo-container">
       <div class="photo-grid" id="photo-grid"></div>
     </div>
@@ -233,109 +296,148 @@
 
   <!-- Lightbox Popup -->
   <div class="lightbox" id="lightbox">
-    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-    <button class="lightbox-btn lightbox-prev" onclick="prevPhoto()">&#10094;</button>
-    <img src="" alt="Full view" class="lightbox-content" id="lightbox-img">
-    <button class="lightbox-btn lightbox-next" onclick="nextPhoto()">&#10095;</button>
-    <div class="lightbox-counter" id="lightbox-counter">1 / 5</div>
+    <button class="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">×</button>
+    <button class="lightbox-btn lightbox-prev" id="btn-prev" onclick="prevPhoto()">❮</button>
+    
+    <div class="lightbox-media-container">
+      <img src="" alt="Full view" class="lightbox-content" id="lightbox-img" style="display: none;">
+      <iframe src="" class="lightbox-video-frame" id="lightbox-video" allow="autoplay; fullscreen" allowfullscreen style="display: none;"></iframe>
+    </div>
+
+    <button class="lightbox-btn lightbox-next" id="btn-next" onclick="nextPhoto()">❯</button>
+    <div class="lightbox-counter" id="lightbox-counter">1 / 1</div>
   </div>
 
   <script>
-    // Converts standard Drive view links to direct image source endpoints
+    // Drive image direct link
     function getDriveDirectUrl(fileId) {
       return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
 
-    // Dataset containing your links
+    // Drive video player preview link (with native player & fullscreen support)
+    function getDriveVideoEmbedUrl(fileId) {
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+
+    // Albums Dataset
     const albums = [
       {
-        id: "sample-album",
-        title: "Main Drive Album",
+        id: "album-1",
+        title: "Album 1",
+        type: "image",
         photos: [
-          { id: "1qBcW5sV_fuRdu9JOECc5vJxcakXg2hyL" },
+          { id: "1cmrtEkfRMjOGkB4bWJrBmjSin-oxMD26" },
+          { id: "1olgmhbveqG04ZtJ-2wO6kOGVCWRBeUYJ" },
+          { id: "1vEikkJ0lJost_cC_l0keMN3ZBRSQ6Ftl" },
+          { id: "1DDoU4xyLu7EvPdSxlf7Va6Nrj-qBVwei" },
+          { id: "1ITbnA40rok9AZDiVgLVGuMo4MzyA6cXl" }
+        ]
+      },
+      {
+        id: "album-2",
+        title: "Album 2",
+        type: "image",
+        photos: [
+          { id: "13pz03v1PX8gUiEe761KgJdSSV5WmdKvs" },
+          { id: "1sQivTqpLjV1w25ng-GbuT1v3gk9bcJsN" },
+          { id: "10Uvirrisao6UZsnnDuwNUkg-lCPi8EYQ" },
           { id: "1DRjVSKmsYKz7nB9QuJJhSstwhOpKSrOL" },
-          { id: "1iMlG_SMl0xWP9EdJLoSg5kOGIUNMXo0Y" },
-          { id: "1O-AfNKgKSxAiQ3lDFe0bupW4ebnJBqWK" },
-          { id: "1DRjVSKmsYKz7nB9QuJJhSstwhOpKSrOL" },
-{ id: "1qBcW5sV_fuRdu9JOECc5vJxcakXg2hyL" },
-{ id: "1DhrDnQjkh4hc3-KVIJU-zYKfWdk__kL6" },
-{ id: "1MMNCA97Q416_Qkm-7pFtcodwg3mber6m" },
-{ id: "1d3uiCafZDEtHuBYQUxzrxu0uiGf2wSIV" },
-{ id: "1wIYENCpERzhvKkdywnwZraApGS-RkXoq" },
-{ id: "1aO8opHYPC_tjh3Hp_-VFDRxAi5SX9unZ" },
-{ id: "1yT5l7Pm7fD2Y2Eaw-hQQHbcWSkukh31t" },
-{ id: "1bA1kcDw08GYTYNyaHYICNXOIRtvcXaTV" },
-{ id: "1CcrI3Fi5lOzXpgh8Ol075SylQbQDHD_y" },
-{ id: "1e0hId3l01GjaRbEb08BdaLAQXLOcX4mF" },
-{ id: "1lrYNHx01kVNpdWJkc9Shl-yQ05yHbqWC" },
-{ id: "1iMlG_SMl0xWP9EdJLoSg5kOGIUNMXo0Y" },
-{ id: "1a8oLTY_dVsCFs7LoOu_ekpMtyaTDNusR" },
-{ id: "12FGuKkhBGdTB197CCrMcxahTPG5Rn8o-" },
-{ id: "1ZkKHVukT-j5uR6sWHDElCVHRfZu068Zi" },
-{ id: "1vmS5cYR1iGmxUj9qD0gcEjxhZnKB7RMB" },
-{ id: "1B_o8DMQ2PY9gjURdMjL-b49axHuozqmf" },
-{ id: "1hHHo2noeVbfigUMtV0IuHziTMSUrJgaR" },
-{ id: "15tNkwSpOMtZ6xrOheNgUssU8KI8EtJ72" },
-{ id: "10y9-Lg_eTmhBMzTebN4JYlZuNxihEsRw" },
-{ id: "1UYdhLimP6CAJR6-AJ6uSObjmYksTJqZf" },
-{ id: "1vGETXZPGfAmW0r32B0-3t8FKCljsBm4Z" },
-{ id: "1NItykjkbw6XzT-rbMJ966TVBr06ZJ90y" },
-{ id: "1HsUOfjYSkgOS49YrPdTSqBeCYdQMW-Pl" },
-{ id: "1wz67_eefqanetErwWrnTxHhAVHcwKp0T" },
-{ id: "1Am8AfghwOOY-lufaWHt20IFiF-WApd-9" },
-{ id: "1W7Kk4faWHEwKigI4EOE56IPV6tDXcthg" },
-{ id: "1qxdU1EmibbEYiVyQrqGohOP-rSNh2YsS" },
-{ id: "1LAuVgIzWdtMbUgf6efF01oPThwmP5u4L" },
-{ id: "1PreTFFPKt3_oszH7ZHojNnNAZ_wGKjos" },
-{ id: "1sugWHaHA3IM-BxsR2Vv5bd5JqfpD5ADr" },
-{ id: "1d9AI4TxnrR0YUg1_P1PtNx-fBwNuNarp" },
-{ id: "1Tu74AagzirLMmR4wU7EbeXVUbHXYldcw" },
-{ id: "1NB0w-CIOe9-jhW1MyEW4M8T65RZlVQYt" },
-{ id: "1YBatZ_L841U6uST8Qft-5QHoGyVnPrbN" },
-{ id: "1eKkCNiB2xfj2AQgHavLZ3trWfKxjfy7L" },
-{ id: "144ESi0WPDU0vmGqVtMbm_TXvpsc3EWyA" },
-{ id: "1jxJuVq6NIBx1EuxNO6fJmNEox-3YX1lh" },
-{ id: "1jM0in-vd367oAOjFhGRT8euzlxo_mNGq" },
-{ id: "1beC51tayRmUBVPP0qLDxUW7eNQ_Vckb6" },
-{ id: "1r3bqNcpbZNxhZXrJuIRb1QaJHtUBj5GE" },
-{ id: "1LHoOZouhQgfIw6v7opP30HKQfYDK1bGy" },
-{ id: "1FJyf6b2JUr6q7C9NLPTUOehL7vO-evsV" },
-{ id: "1Yd6jffsxH_4Gcproto8cFw8CC0AhJUj3" },
-{ id: "15iW6qvu0Rz6DmDuE6zaCuq5lJQiDLJo9" },
-{ id: "12kO-qZfaroJH_CJwtPy-bUwsoFL47ef1" },
-{ id: "1kHbwp1onM3WSq3xJ9W1qA8ktp7WUKEeM" },
-{ id: "1G-lWyEZGnt93akU-Lv5heC7eLBTy9aRU" },
-{ id: "1yWJvnTtw2I9E2tvq9uXbBNRCqDsEsX4F" },
-{ id: "1ZCc5tGg19HkMPamEh0MM2F_dAXoeFIsh" },
-{ id: "1hc-5pd4itf_UjmL35Npw4Cu_a63Kv-MX" },
-{ id: "1lnUQ5Vb7g0RIoLRO---jhwWYAZ9jwhtx" },
-{ id: "1n9HjOFl9ipvdDLJXdfpKDO3WevoY3pqt" },
-{ id: "1C6tKCV0fQqsOo9xgJkaVBUJJqz68w9ks" },
-{ id: "1SfVFB6LF5V42NhfYiPL2yZ_cXQv5neE9" },
-{ id: "1Xa8dKm3mVS3E-2w5ecRkmDgVmsRO9a7X" },
-{ id: "1pxSUlRxoynZRWn3WYSZiV2errHALwKUi" },
-{ id: "1F1ZJxCYSwzQjCV1ZSvPOtTipWz2MQ3RD" },
-{ id: "1PloIhkmPi4jj5xp393ppNXwxTdL0SsHH" },
-{ id: "1ja54zuz3VAOXboEYZRdeZWNm4_ZrHdC7" },
-{ id: "1SrNXfWWMVel_py1L2BNJap79E7Yir2G-" },
-{ id: "1Dc4ws_FyTSr5vq80i9pGk6fKNbtmya2_" },
-{ id: "17mnhxXxa8wl0ANfNqOva5woKG9AXVEJh" },
-{ id: "16Xgrj8GSKzs2c0PeOy2SYw3bPdXMSXft" },
-{ id: "1i7nMRBDS0xSonHpZubQ0OpO7wsXoQEO3" },
-{ id: "1u53py5mYM0fu_mBZKTjBDbT3f46cBJYg" },
-{ id: "1Lg-OLZsL8XmsmNtC7v-8k5rI0KqZ7mny" },
-{ id: "1cmrtEkfRMjOGkB4bWJrBmjSin-oxMD26" },
-{ id: "1olgmhbveqG04ZtJ-2wO6kOGVCWRBeUYJ" },
-{ id: "13pz03v1PX8gUiEe761KgJdSSV5WmdKvs" },
-{ id: "1vEikkJ0lJost_cC_l0keMN3ZBRSQ6Ftl" },
-{ id: "1DDoU4xyLu7EvPdSxlf7Va6Nrj-qBVwei" },
-{ id: "1ITbnA40rok9AZDiVgLVGuMo4MzyA6cXl" },
-{ id: "1sQivTqpLjV1w25ng-GbuT1v3gk9bcJsN" },
-{ id: "1TyyYmECxI5YTQFABIDttxpL0sRttC3fZ" },
-{ id: "12OO05Nw58Efp1vE0VJSv0pGGtDtuJAI9" },
-{ id: "10Uvirrisao6UZsnnDuwNUkg-lCPi8EYQ" },
-{ id: "1SlWXgQIfMAxVgBNC1LpKuaQD5Z9yTAyA" },
-          { id: "14f41raDCbmhf3p3SwIDyGPXrx3p7b_VK" }
+          { id: "1qBcW5sV_fuRdu9JOECc5vJxcakXg2hyL" }
+        ]
+      },
+      {
+        id: "album-3",
+        title: "Album 3",
+        type: "image",
+        photos: [
+          { id: "1TyyYmECxI5YTQFABIDttxpL0sRttC3fZ" },
+          { id: "12OO05Nw58Efp1vE0VJSv0pGGtDtuJAI9" },
+          { id: "1DhrDnQjkh4hc3-KVIJU-zYKfWdk__kL6" },
+          { id: "1MMNCA97Q416_Qkm-7pFtcodwg3mber6m" },
+          { id: "1d3uiCafZDEtHuBYQUxzrxu0uiGf2wSIV" }
+        ]
+      },
+      {
+        id: "album-4",
+        title: "Album 4",
+        type: "image",
+        photos: [
+          { id: "1SlWXgQIfMAxVgBNC1LpKuaQD5Z9yTAyA" },
+          { id: "1wIYENCpERzhvKkdywnwZraApGS-RkXoq" },
+          { id: "1aO8opHYPC_tjh3Hp_-VFDRxAi5SX9unZ" },
+          { id: "1yT5l7Pm7fD2Y2Eaw-hQQHbcWSkukh31t" },
+          { id: "1bA1kcDw08GYTYNyaHYICNXOIRtvcXaTV" }
+        ]
+      },
+      {
+        id: "album-5",
+        title: "Album 5",
+        type: "image",
+        photos: [
+          { id: "1hc-5pd4itf_UjmL35Npw4Cu_a63Kv-MX" },
+          { id: "1lnUQ5Vb7g0RIoLRO---jhwWYAZ9jwhtx" },
+          { id: "1n9HjOFl9ipvdDLJXdfpKDO3WevoY3pqt" },
+          { id: "1C6tKCV0fQqsOo9xgJkaVBUJJqz68w9ks" },
+          { id: "1SfVFB6LF5V42NhfYiPL2yZ_cXQv5neE9" }
+        ]
+      },
+      {
+        id: "video",
+        title: "video",
+        type: "video",
+        photos: [
+          { id: "1wZMRYDR7ag7KB9APoGq9nPj4T1nWrhIG" },
+          { id: "10gCCgawvV2tvufQhEwLt82KKpNeU7Y6h" },
+{ id: "10ugrp5jeWtf-IZjuCNsohu3g7QdbK05U" },
+{ id: "10ymYAs89gGy0mh7lJOwrBVKMlHDW4qUn" },
+{ id: "129Xliai_nF42MpsxWOTobKfmNYAOi3hy" },
+{ id: "12XNwkQMUhrqNqmG7TNvwMmXz3_XeV88P" },
+{ id: "13CLM9v0D5Q7y0RjyBxk0zrdjyL5dfwuW" },
+{ id: "13Vq9B_zbb7PDHM8tjUA9Q9I14ui3ZzxV" },
+{ id: "14HQm1-MGekC-5jnLTiv_w0U-BXoLYd37" },
+{ id: "1840iNBuIvgGH4glwm9fDkXZyU32YrPer" },
+{ id: "1ApzW1tCSZYVJBAzKhDMVXRjtbgGoptYF" },
+{ id: "1BSinqa8DemyC10WPY_ibm9O72IpJpmGL" },
+{ id: "1CT94aXJYXH43bMNTImFyErogbkUni0X_" },
+{ id: "1D_f6Bux4KAfmzkp5xQiScaGhXBUPzKJm" },
+{ id: "1EBrSB3sel1hOd7BFgV6S_ZFatxNFZ5Zi" },
+{ id: "1GDz6EbG6-e2pLrK4KjUdMx8nzqhmRUIA" },
+{ id: "1JQf95spWxAokOj7peb1evEDYeGJJ5yQU" },
+{ id: "1JkYQz2CJ4b30RnSui6QxifUVzkIzsD5C" },
+{ id: "1LalcWWqxOfZd6DdwkUQHu8PQPKKs-CXn" },
+{ id: "1M3vTrMe6faQnp9yj_wSxmCuKkuxymE5X" },
+{ id: "1ORpv0GAbBP7g72bRuAKS5tfAdQ0k-NPP" },
+{ id: "1P02uEMBWh1Cy8_UxRb_gTrW6aMoDJBYD" },
+{ id: "1QBlfqlUYyOeOfbRgs358AlRrgdIn3Jv_" },
+{ id: "1R-xFj-MYo47OVWiItB4zfXUMQ1UmBLxS" },
+{ id: "1Sqcd-pCvd3AJP5c7DhjN1LanRCH1U_CS" },
+{ id: "1T0InmFQ4NzVEXLuRhW02hTsaWprfEK5W" },
+{ id: "1UzJbUBPV8o5suw3DKkaHC_d2ecy7dGTU" },
+{ id: "1WwCctcQ3Giuay_Fshg4RBdzb9WU-iMv9" },
+{ id: "1X6YJltxgb34VG5PAfurvyhw0-fiEaSrI" },
+{ id: "1Y-WmUHd4pmBFzEFQADolNAyERYaY35zj" },
+{ id: "1YnuVwbDz_NqQOFBIVt183PcFqP7YkYfQ" },
+{ id: "1bTSby2UASwPegoIli5QE-NgMFlAv-u-S" },
+{ id: "1bhTRhVBTL4RL1UpHQQKd_4Gc39n6GXX7" },
+{ id: "1ci_LP0xnN-nR6ZIdTb0qh17P_T9LbJSx" },
+{ id: "1ejOc-OdKjvLsSvOMrKTDWjubFQXFLHok" },
+{ id: "1etiVXNVVnbgU0GRIJdwfIJJsCA0lgU7A" },
+{ id: "1fprfYADgi9gP5DQRIRNvu3x4mVLuu635" },
+{ id: "1gssMwCk3g4ixyRiyoKMz9C2AWOFuzFn1" },
+{ id: "1i2TfIqSOcGPZhAIYbSCR61Jh7pp48D-r" },
+{ id: "1iPf3V-MzY3bgwX3VlY5ujEDZU_3Rl-QD" },
+{ id: "1m7Q_YWWGkpjXWqaaU_XSoW_BRp3Gzizj" },
+{ id: "1mSSxgexaKK_9mNqIC5BWbOTf_uaNzocI" },
+{ id: "1n8WKWhZpT90iB3ptgtGzrNYCm_znVi4c" },
+{ id: "1nOk_qczBFB6ZohUIE943xKcg0z9cJHr_" },
+{ id: "1q0Ygg2rMR9GTZwFVrzDqkHx69_NB0RMj" },
+{ id: "1sNhMUqyK7wptelf3vYjHEuAkDXbYYIiK" },
+{ id: "1tHbcEDCYj2QFSYrsGR3kVIOsn64SWeOZ" },
+{ id: "1uHedAeAOcxeS2_VYZflu3RFw99N3uaov" },
+{ id: "1wZMRYDR7ag7KB9APoGq9nPj4T1nWrhIG" },
+{ id: "1zVCawpBJBCPV8XkrjBMmNEy2RBgEhrkc" },
+{ id: "1zsdaukAeTYNQD2EmvOsOzVllYOxX1P-m" }
+
         ]
       }
     ];
@@ -349,22 +451,34 @@
       container.innerHTML = '';
 
       albums.forEach(album => {
-        const coverUrl = getDriveDirectUrl(album.photos[0].id);
+        const isVideoAlbum = album.type === 'video' || album.id === 'video';
+        let coverHtml = '';
+
+        if (isVideoAlbum) {
+          coverHtml = `
+            <div class="album-cover" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
+              <div class="play-badge">▶</div>
+            </div>`;
+        } else {
+          const coverUrl = album.photos.length > 0 ? getDriveDirectUrl(album.photos[0].id) : '';
+          coverHtml = `<div class="album-cover" style="background-image: url('${coverUrl}')"></div>`;
+        }
+
         const card = document.createElement('div');
         card.className = 'album-card';
         card.onclick = () => openAlbum(album);
         card.innerHTML = `
-          <div class="album-cover" style="background-image: url('${coverUrl}')"></div>
+          ${coverHtml}
           <div class="album-info">
             <h3>${album.title}</h3>
-            <p>${album.photos.length} Photos</p>
+            <p>${album.photos.length} ${isVideoAlbum ? 'Video' : 'Photos'}</p>
           </div>
         `;
         container.appendChild(card);
       });
     }
 
-    // Open an Album & Display Photos
+    // Open an Album & Display Items
     function openAlbum(album) {
       currentAlbum = album;
       document.getElementById('album-container').style.display = 'none';
@@ -375,17 +489,29 @@
       const grid = document.getElementById('photo-grid');
       grid.innerHTML = '';
 
+      const isVideo = album.type === 'video' || album.id === 'video';
+
       album.photos.forEach((photo, index) => {
         const item = document.createElement('div');
         item.className = 'photo-item';
         item.onclick = () => openLightbox(index);
-        item.innerHTML = `<img src="${getDriveDirectUrl(photo.id)}" loading="lazy" alt="Photo ${index + 1}">`;
+
+        if (isVideo) {
+          item.innerHTML = `
+            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background: linear-gradient(135deg, #1e293b, #0f172a);">
+              <div class="play-badge">▶</div>
+            </div>
+          `;
+        } else {
+          item.innerHTML = `<img src="${getDriveDirectUrl(photo.id)}" loading="lazy" alt="Photo ${index + 1}">`;
+        }
         grid.appendChild(item);
       });
     }
 
     // Return to Albums View
     function showAlbums() {
+      closeLightbox();
       document.getElementById('album-container').style.display = 'grid';
       document.getElementById('photo-container').style.display = 'none';
       document.getElementById('btn-back').style.display = 'none';
@@ -396,7 +522,10 @@
     // Lightbox Controls
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxVideo = document.getElementById('lightbox-video');
     const lightboxCounter = document.getElementById('lightbox-counter');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
 
     function openLightbox(index) {
       activePhotoIndex = index;
@@ -406,22 +535,49 @@
 
     function closeLightbox() {
       lightbox.style.display = 'none';
+      // Stop video playback when lightbox is closed
+      lightboxVideo.src = '';
+      lightboxVideo.style.display = 'none';
+      lightboxImg.style.display = 'none';
     }
 
     function updateLightbox() {
-      const photo = currentAlbum.photos[activePhotoIndex];
-      lightboxImg.src = getDriveDirectUrl(photo.id);
+      if (!currentAlbum || currentAlbum.photos.length === 0) return;
+
+      const item = currentAlbum.photos[activePhotoIndex];
+      const isVideo = currentAlbum.type === 'video' || currentAlbum.id === 'video';
+
+      // Show/hide navigation arrows if single item
+      if (currentAlbum.photos.length <= 1) {
+        btnPrev.style.display = 'none';
+        btnNext.style.display = 'none';
+      } else {
+        btnPrev.style.display = 'flex';
+        btnNext.style.display = 'flex';
+      }
+
+      if (isVideo) {
+        lightboxImg.style.display = 'none';
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.src = getDriveVideoEmbedUrl(item.id);
+      } else {
+        lightboxVideo.src = '';
+        lightboxVideo.style.display = 'none';
+        lightboxImg.style.display = 'block';
+        lightboxImg.src = getDriveDirectUrl(item.id);
+      }
+
       lightboxCounter.innerText = `${activePhotoIndex + 1} / ${currentAlbum.photos.length}`;
     }
 
     function nextPhoto() {
-      if (!currentAlbum) return;
+      if (!currentAlbum || currentAlbum.photos.length <= 1) return;
       activePhotoIndex = (activePhotoIndex + 1) % currentAlbum.photos.length;
       updateLightbox();
     }
 
     function prevPhoto() {
-      if (!currentAlbum) return;
+      if (!currentAlbum || currentAlbum.photos.length <= 1) return;
       activePhotoIndex = (activePhotoIndex - 1 + currentAlbum.photos.length) % currentAlbum.photos.length;
       updateLightbox();
     }
@@ -435,7 +591,7 @@
       }
     });
 
-    // Touch Swipe Support (Left / Right swipe)
+    // Touch Swipe Support
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -449,12 +605,12 @@
     }, false);
 
     function handleSwipe() {
-      const threshold = 50; // Minimum swipe distance in px
+      const threshold = 50;
       if (touchEndX < touchStartX - threshold) {
-        nextPhoto(); // Swiped left -> show next
+        nextPhoto();
       }
       if (touchEndX > touchStartX + threshold) {
-        prevPhoto(); // Swiped right -> show previous
+        prevPhoto();
       }
     }
 
