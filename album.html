@@ -69,7 +69,6 @@
       flex: 1;
     }
 
-    /* Album Section */
     .album-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -116,7 +115,6 @@
       color: var(--text-muted);
     }
 
-    /* Photo/Video Grid Section */
     .photo-grid-wrapper {
       display: none;
     }
@@ -195,6 +193,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      background: #000;
     }
 
     .lightbox-content {
@@ -202,34 +201,34 @@
       max-height: 90vh;
       object-fit: contain;
       border-radius: 6px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
 
-    /* Mobile Edge-to-Edge Fullscreen Video */
+    /* Native HTML5 Video Element (Clean Android Video Experience) */
+    .native-video-player {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      background: #000;
+      outline: none;
+    }
+
+    .native-video-player.fill-mode {
+      object-fit: cover;
+    }
+
     .lightbox-video-frame {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       border: none;
       background: #000;
-    }
-
-    /* Video Mode Specific Fullscreen Overlay */
-    .lightbox.video-mode .lightbox-media-container {
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .lightbox.video-mode .lightbox-video-frame {
-      width: 100vw;
-      height: 100vh;
     }
 
     .lightbox-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.25);
       color: white;
       font-size: 1.8rem;
       width: 44px;
@@ -250,23 +249,36 @@
     .lightbox-prev { left: 1rem; }
     .lightbox-next { right: 1rem; }
 
-    .lightbox-close {
+    /* Top Overlay Action Buttons */
+    .top-controls {
       position: absolute;
       top: 1rem;
       right: 1rem;
+      display: flex;
+      gap: 0.6rem;
+      z-index: 100002;
+    }
+
+    .lightbox-action-btn {
       background: rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       color: white;
-      font-size: 1.8rem;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
+      font-size: 1rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
-      z-index: 100001;
+      backdrop-filter: blur(4px);
+    }
+
+    .lightbox-close {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      padding: 0;
     }
 
     .lightbox-close:hover {
@@ -275,43 +287,13 @@
 
     .lightbox-counter {
       position: absolute;
-      bottom: 1rem;
+      bottom: 1.2rem;
       color: #fff;
       font-size: 0.85rem;
       background: rgba(0, 0, 0, 0.65);
       padding: 0.3rem 0.75rem;
       border-radius: 12px;
       z-index: 100000;
-    }
-
-    /* Rotate Button for Mobile */
-    .lightbox-rotate-btn {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      background: rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      color: #fff;
-      font-size: 1.2rem;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100001;
-    }
-
-    @media (max-width: 768px) {
-      .lightbox-prev, .lightbox-next {
-        width: 38px;
-        height: 38px;
-        font-size: 1.4rem;
-      }
-      .lightbox-rotate-btn {
-        display: flex;
-      }
     }
   </style>
 </head>
@@ -332,14 +314,24 @@
     </div>
   </main>
 
-  <!-- Lightbox Popup -->
+  <!-- Lightbox Modal -->
   <div class="lightbox" id="lightbox">
-    <button class="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">×</button>
-    <button class="lightbox-rotate-btn" id="btn-rotate" onclick="toggleScreenOrientation()" title="Rotate Landscape/Portrait">⟲</button>
+    <div class="top-controls">
+      <!-- Full Zoom / Fit Toggle Button for Video -->
+      <button class="lightbox-action-btn" id="btn-aspect" onclick="toggleAspectFit()" style="display: none;">↔ Fit / Fill</button>
+      <button class="lightbox-action-btn lightbox-close" onclick="closeLightbox()" title="Close (Esc)">×</button>
+    </div>
+
     <button class="lightbox-btn lightbox-prev" id="btn-prev" onclick="prevPhoto()">❮</button>
     
     <div class="lightbox-media-container" id="media-container">
+      <!-- Image Display -->
       <img src="" alt="Full view" class="lightbox-content" id="lightbox-img" style="display: none;">
+      
+      <!-- Clean HTML5 Video Player (First Priority - No Google Drive UI) -->
+      <video id="native-video" class="native-video-player" controls playsinline webkit-playsinline autoplay style="display: none;"></video>
+      
+      <!-- Fallback Drive Iframe (Only if direct stream is unavailable) -->
       <iframe src="" class="lightbox-video-frame" id="lightbox-video" allow="autoplay; fullscreen" allowfullscreen style="display: none;"></iframe>
     </div>
 
@@ -350,6 +342,10 @@
   <script>
     function getDriveDirectUrl(fileId) {
       return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+
+    function getDriveStreamUrl(fileId) {
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
     }
 
     function getDriveVideoEmbedUrl(fileId) {
@@ -480,9 +476,8 @@
 
     let currentAlbum = null;
     let activePhotoIndex = 0;
-    let isLandscape = false;
+    let isFillMode = false;
 
-    // Render Album Cards
     function renderAlbums() {
       const container = document.getElementById('album-container');
       container.innerHTML = '';
@@ -515,7 +510,6 @@
       });
     }
 
-    // Open Album
     function openAlbum(album) {
       currentAlbum = album;
       document.getElementById('album-container').style.display = 'none';
@@ -546,7 +540,6 @@
       });
     }
 
-    // Back to Albums View
     function showAlbums() {
       closeLightbox();
       document.getElementById('album-container').style.display = 'grid';
@@ -556,110 +549,56 @@
       currentAlbum = null;
     }
 
-    // Lightbox Controls
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxVideo = document.getElementById('lightbox-video');
+    const nativeVideo = document.getElementById('native-video');
+    const iframeVideo = document.getElementById('lightbox-video');
+    const btnAspect = document.getElementById('btn-aspect');
     const lightboxCounter = document.getElementById('lightbox-counter');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
-    const btnRotate = document.getElementById('btn-rotate');
 
-    async function openLightbox(index) {
-      activePhotoIndex = index;
-      const isVideo = currentAlbum.type === 'video' || currentAlbum.id === 'video';
-      
-      lightbox.style.display = 'flex';
+    // Fallback if native direct stream fails
+    nativeVideo.onerror = function() {
+      if (currentAlbum && (currentAlbum.type === 'video' || currentAlbum.id === 'video')) {
+        const item = currentAlbum.photos[activePhotoIndex];
+        nativeVideo.style.display = 'none';
+        iframeVideo.style.display = 'block';
+        iframeVideo.src = getDriveVideoEmbedUrl(item.id);
+      }
+    };
 
-      if (isVideo) {
-        lightbox.classList.add('video-mode');
-        btnRotate.style.display = 'flex';
-        // Auto trigger fullscreen & landscape orientation on Android
-        autoEnterFullscreenAndRotate();
+    function toggleAspectFit() {
+      isFillMode = !isFillMode;
+      if (isFillMode) {
+        nativeVideo.classList.add('fill-mode');
+        btnAspect.innerText = '⤢ Fill (Active)';
       } else {
-        lightbox.classList.remove('video-mode');
-        btnRotate.style.display = 'none';
+        nativeVideo.classList.remove('fill-mode');
+        btnAspect.innerText = '↔ Fit (Active)';
       }
+    }
 
+    function openLightbox(index) {
+      activePhotoIndex = index;
+      lightbox.style.display = 'flex';
       updateLightbox();
-    }
-
-    async function autoEnterFullscreenAndRotate() {
-      try {
-        if (!document.fullscreenElement && lightbox.requestFullscreen) {
-          await lightbox.requestFullscreen();
-        } else if (!document.fullscreenElement && lightbox.webkitRequestFullscreen) {
-          await lightbox.webkitRequestFullscreen();
-        }
-      } catch (err) {
-        console.log("Fullscreen request bypassed:", err);
-      }
-
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape");
-          isLandscape = true;
-        }
-      } catch (err) {
-        console.log("Orientation lock not supported without PWA/user permission:", err);
-      }
-    }
-
-    async function toggleScreenOrientation() {
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          if (isLandscape) {
-            await screen.orientation.lock("portrait");
-            isLandscape = false;
-          } else {
-            await screen.orientation.lock("landscape");
-            isLandscape = true;
-          }
-        }
-      } catch (e) {
-        // Fallback CSS rotation if native screen orientation lock fails
-        const container = document.getElementById('media-container');
-        if (!isLandscape) {
-          container.style.transform = 'rotate(90deg)';
-          container.style.width = '100vh';
-          container.style.height = '100vw';
-          isLandscape = true;
-        } else {
-          container.style.transform = 'none';
-          container.style.width = '100%';
-          container.style.height = '100%';
-          isLandscape = false;
-        }
-      }
     }
 
     function closeLightbox() {
       lightbox.style.display = 'none';
-      lightboxVideo.src = '';
-      lightboxVideo.style.display = 'none';
+      
+      // Stop native video playback
+      nativeVideo.pause();
+      nativeVideo.src = '';
+      nativeVideo.style.display = 'none';
+
+      // Stop iframe playback
+      iframeVideo.src = '';
+      iframeVideo.style.display = 'none';
+
       lightboxImg.style.display = 'none';
-
-      // Reset transform
-      const container = document.getElementById('media-container');
-      container.style.transform = 'none';
-      container.style.width = '100%';
-      container.style.height = '100%';
-      isLandscape = false;
-
-      // Unlock orientation & exit fullscreen
-      try {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-      } catch(e) {}
-
-      try {
-        if (document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
-      } catch(e) {}
+      btnAspect.style.display = 'none';
     }
 
     function updateLightbox() {
@@ -678,11 +617,22 @@
 
       if (isVideo) {
         lightboxImg.style.display = 'none';
-        lightboxVideo.style.display = 'block';
-        lightboxVideo.src = getDriveVideoEmbedUrl(item.id);
+        btnAspect.style.display = 'block';
+
+        // Try clean Native HTML5 player first
+        iframeVideo.style.display = 'none';
+        iframeVideo.src = '';
+        nativeVideo.style.display = 'block';
+        nativeVideo.src = getDriveStreamUrl(item.id);
+        nativeVideo.play().catch(() => {});
       } else {
-        lightboxVideo.src = '';
-        lightboxVideo.style.display = 'none';
+        btnAspect.style.display = 'none';
+        nativeVideo.pause();
+        nativeVideo.src = '';
+        nativeVideo.style.display = 'none';
+        iframeVideo.src = '';
+        iframeVideo.style.display = 'none';
+
         lightboxImg.style.display = 'block';
         lightboxImg.src = getDriveDirectUrl(item.id);
       }
@@ -710,30 +660,6 @@
       }
     });
 
-    // Touch Swipe Navigation
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    lightbox.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, false);
-
-    lightbox.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }, false);
-
-    function handleSwipe() {
-      const threshold = 50;
-      if (touchEndX < touchStartX - threshold) {
-        nextPhoto();
-      }
-      if (touchEndX > touchStartX + threshold) {
-        prevPhoto();
-      }
-    }
-
-    // Initialize
     renderAlbums();
   </script>
 </body>
