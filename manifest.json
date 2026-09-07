@@ -1,0 +1,16 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "livevt",
+  "orientation": "any",
+  "scope": "/livevt/",
+  "short_name": "livevt",
+  "start_url": "/livevt/",
+  "theme_color": "#ffffff",
+  "id": "/livevt/",
+  "lang": "en",
+  "categories": [
+    "books"
+  ]
+}
