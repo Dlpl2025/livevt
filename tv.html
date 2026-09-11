@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web IPTV M3U Player</title>
-    <!-- Tailwind CSS for modern UI styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- HLS.js for playing HLS (.m3u8) streams in standard browsers -->
+    <!-- HLS.js for streaming -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col">
@@ -14,13 +14,20 @@
     <!-- Header -->
     <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
         <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold text-blue-400">📺 Online IPTV Player</h1>
-            <div class="flex gap-4 w-full md:w-auto">
+            <h1 class="text-2xl font-bold text-blue-400">📺 Local IPTV Player</h1>
+            <div class="flex flex-wrap gap-3 w-full md:w-auto items-center">
+                <!-- File Upload Button -->
+                <label class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded cursor-pointer transition-colors shadow">
+                    📂 Load M3U File
+                    <input type="file" id="fileInput" accept=".m3u,.m3u8" class="hidden">
+                </label>
+
                 <!-- Search Input -->
                 <input type="text" id="searchInput" placeholder="Search channels..." 
-                    class="bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500 w-full md:w-64">
+                    class="bg-gray-700 border border-gray-600 rounded px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-48">
+
                 <!-- Country Filter Dropdown -->
-                <select id="countryFilter" class="bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500">
+                <select id="countryFilter" class="bg-gray-700 border border-gray-600 rounded px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                     <option value="">All Countries</option>
                 </select>
             </div>
@@ -30,7 +37,7 @@
     <!-- Main Content Area -->
     <main class="container mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Video Player Section (Left/Top) -->
+        <!-- Video Player Section -->
         <div class="lg:col-span-2 flex flex-col gap-4">
             <div class="relative bg-black rounded-lg overflow-hidden shadow-lg aspect-video flex items-center justify-center">
                 <video id="videoPlayer" controls autoplay class="w-full h-full"></video>
@@ -44,15 +51,14 @@
             </div>
         </div>
 
-        <!-- Channel List Section (Right/Bottom) -->
+        <!-- Channel List Section -->
         <div class="bg-gray-800 rounded-lg shadow border border-gray-700 flex flex-col h-[600px]">
             <div class="p-3 border-b border-gray-700 font-semibold text-gray-300 flex justify-between items-center">
                 <span>Channel List</span>
                 <span id="channelCount" class="text-xs bg-blue-600 px-2 py-1 rounded-full">0 channels</span>
             </div>
             <div id="channelList" class="overflow-y-auto flex-grow divide-y divide-gray-700">
-                <!-- Channels will be populated here via JavaScript -->
-                <div class="p-4 text-center text-gray-400">Loading playlists...</div>
+                <div class="p-4 text-center text-gray-400">Loading channels or select file above...</div>
             </div>
         </div>
 
@@ -60,12 +66,12 @@
 
     <!-- Footer -->
     <footer class="bg-gray-800 border-t border-gray-700 text-center py-4 text-sm text-gray-400">
-        Powered by IPTV-Org &bull; Built with Tailwind & HLS.js
+        Local IPTV Player &bull; Built with Tailwind & HLS.js
     </footer>
 
     <!-- Application Logic -->
     <script>
-        const M3U_URL = "https://iptv-org.github.io/iptv/index.m3u";
+        const LOCAL_FILE_NAME = "active_iptv.m3u";
         
         let allChannels = [];
         const video = document.getElementById('videoPlayer');
@@ -76,22 +82,43 @@
         const channelCountEl = document.getElementById('channelCount');
         const currentTitleEl = document.getElementById('currentChannelTitle');
         const currentMetaEl = document.getElementById('currentChannelMeta');
+        const fileInput = document.getElementById('fileInput');
 
         let hls = null;
 
-        // Fetch and parse M3U Playlist
-        async function loadPlaylist() {
+        // 1. Manual File Upload Handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            channelListEl.innerHTML = `<div class="p-4 text-center text-gray-400">Reading file...</div>`;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseM3U(event.target.result);
+            };
+            reader.onerror = function() {
+                channelListEl.innerHTML = `<div class="p-4 text-center text-red-400">Failed to read uploaded file.</div>`;
+            };
+            reader.readAsText(file);
+        });
+
+        // 2. Auto load if running on local server (like Live Server)
+        async function loadDefaultFile() {
             try {
-                // Using a CORS proxy if necessary, or direct fetch if headers permit
-                const response = await fetch(M3U_URL);
+                const response = await fetch(LOCAL_FILE_NAME);
+                if (!response.ok) throw new Error("HTTP error " + response.status);
                 const data = await response.text();
                 parseM3U(data);
             } catch (error) {
-                console.error("Error fetching playlist:", error);
-                channelListEl.innerHTML = `<div class="p-4 text-center text-red-400">Failed to load playlist. Check CORS or network connection.</div>`;
+                channelListEl.innerHTML = `
+                    <div class="p-4 text-center text-yellow-400">
+                        Could not auto-load <b>${LOCAL_FILE_NAME}</b>.<br>
+                        Click <b>"Load M3U File"</b> at the top to select your file.
+                    </div>`;
             }
         }
 
+        // Parse M3U Playlist Content
         function parseM3U(data) {
             const lines = data.split('\n');
             let channels = [];
@@ -102,12 +129,10 @@
                 if (line.startsWith('#EXTINF:')) {
                     currentChannel = {};
                     
-                    // Extract TVG Name / Channel Name
                     let nameMatch = line.match(/tvg-name="([^"]*)"/);
                     let logoMatch = line.match(/tvg-logo="([^"]*)"/);
                     let countryMatch = line.match(/tvg-country="([^"]*)"/);
                     
-                    // Fallback name extraction after the last comma
                     let commaIndex = line.lastIndexOf(',');
                     currentChannel.name = nameMatch ? nameMatch[1] : (commaIndex !== -1 ? line.substring(commaIndex + 1).trim() : "Unknown Channel");
                     if (!currentChannel.name && commaIndex !== -1) {
@@ -115,7 +140,7 @@
                     }
 
                     currentChannel.logo = logoMatch ? logoMatch[1] : '';
-                    currentChannel.country = countryMatch ? countryMatch.toUpperCase() : 'UNKNOWN';
+                    currentChannel.country = countryMatch ? countryMatch[1].toUpperCase() : 'OTHER';
                 } else if (line && !line.startsWith('#')) {
                     currentChannel.url = line;
                     if (currentChannel.url) {
@@ -131,14 +156,13 @@
         }
 
         function populateCountries() {
-            const countries = [...new Set(allChannels.map(c => c.country))].sort();
+            countryFilter.innerHTML = '<option value="">All Countries</option>';
+            const countries = [...new Set(allChannels.map(c => c.country || 'OTHER'))].sort();
             countries.forEach(country => {
-                if (country && country !== 'UNKNOWN') {
-                    const option = document.createElement('option');
-                    option.value = country;
-                    option.textContent = country;
-                    countryFilter.appendChild(option);
-                }
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                countryFilter.appendChild(option);
             });
         }
 
@@ -151,10 +175,10 @@
                 return;
             }
 
-            // Render top 100 results for performance optimization if the list is massive
-            const displayList = channels.slice(0, 150); 
+            // Slice for performance optimization on massive lists
+            const displayList = channels.slice(0, 200); 
 
-            displayList.forEach((channel, index) => {
+            displayList.forEach((channel) => {
                 const item = document.createElement('div');
                 item.className = "flex items-center gap-3 p-3 hover:bg-gray-700 cursor-pointer transition-colors";
                 
@@ -175,7 +199,7 @@
 
         function playChannel(channel) {
             currentTitleEl.textContent = channel.name;
-            currentMetaEl.textContent = `Country: ${channel.country}`;
+            currentMetaEl.textContent = `Country / Group: ${channel.country}`;
             placeholder.style.display = 'none';
 
             if (Hls.isSupported() && channel.url.includes('.m3u8')) {
@@ -194,7 +218,6 @@
             }
         }
 
-        // Filtering logic
         function filterChannels() {
             const query = searchInput.value.toLowerCase();
             const selectedCountry = countryFilter.value;
@@ -211,8 +234,8 @@
         searchInput.addEventListener('input', filterChannels);
         countryFilter.addEventListener('change', filterChannels);
 
-        // Initialize App
-        loadPlaylist();
+        // Run default fetch attempt on start
+        loadDefaultFile();
     </script>
 </body>
 </html>
